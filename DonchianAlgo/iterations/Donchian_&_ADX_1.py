@@ -41,11 +41,11 @@ class DonchianAlgo_48hr(Strategy):
     def calculate_adx(self, df, period=11):
         # Step 1: Calculate price differences
         df['up_move'] = df['high'].diff()
-        df['down_move'] = df['low'].diff()
+        df['down_move'] = -df['low'].diff() # negate so its prev - curr
 
         # Step 2: Calculate +DM and -DM
         df['+DM'] = ((df['up_move'] > df['down_move']) & (df['up_move'] > 0)) * df['up_move']
-        df['-DM'] = ((df['down_move'] > df['up_move']) & (df['down_move'] > 0)) * -df['down_move']
+        df['-DM'] = ((df['down_move'] > df['up_move']) & (df['down_move'] > 0)) * df['down_move']
 
         # Step 3: Calculate True Range (TR)
         #df['TR'] = df[['high', 'low', 'close']].copy().shift(1)
