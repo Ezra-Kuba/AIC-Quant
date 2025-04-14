@@ -1,4 +1,3 @@
-
 #Set API Key, this is how lumibot needs it above all imports
 #Wasted 20 minutes figuring that out
 #THIS FIRST ALWAYS!
@@ -138,14 +137,37 @@ class DonchianAlgo_48hr(Strategy):
         has_long_position = position is not None and position.quantity > 0
         has_short_position = position is not None and position.quantity < 0
 
+        # Rolling stop-loss logic for long positions
+        if has_long_position:
+            if self.highest_price is None or current_price > self.highest_price:
+                self.highest_price = current_price
+                self.long_stop_loss_price = self.highest_price * 0.96  # Adjust stop-loss to 4% below the highest price
+
+            if current_price <= self.long_stop_loss_price:
+                print(f"Long position stop-loss triggered at {current_price}. Selling all.")
+                self.sell_all()
+                return
+
+        # Rolling stop-loss logic for short positions
+        elif has_short_position:
+            if self.lowest_price is None or current_price < self.lowest_price:
+                self.lowest_price = current_price
+                self.short_stop_loss_price = self.lowest_price * 1.03  # Adjust stop-loss to 3% above the lowest price
+
+            if current_price >= self.short_stop_loss_price:
+                print(f"Short position stop-loss triggered at {current_price}. Selling all.")
+                self.sell_all()
+                return
+
+        # Entry logic based on ADX and price levels
         if latest_adx > 25:
             if current_price > self.highest_price and not has_long_position:
                 if has_short_position:
                     self.sell_all()
                     return
                 order_quantity = self.position_sizing()
-                self.long_stop_loss_price = current_price * 0.96  # 6% stop loss
-                take_profit_price = current_price * 1.10  # 10% take profit
+                self.long_stop_loss_price = current_price * 0.96  # Initial stop-loss for long position
+                self.highest_price = current_price  # Initialize highest price
                 buy_order = self.create_order(
                     self.symbol,
                     order_quantity,
@@ -161,8 +183,8 @@ class DonchianAlgo_48hr(Strategy):
                     self.sell_all()
                     return
                 order_quantity = self.position_sizing()
-                self.short_stop_loss_price = current_price * 1.03  # 4% stop loss
-                take_profit_price = current_price * 0.90  # 10% take profit
+                self.short_stop_loss_price = current_price * 1.03  # Initial stop-loss for short position
+                self.lowest_price = current_price  # Initialize lowest price
                 sell_order = self.create_order(
                     self.symbol,
                     order_quantity,
@@ -172,15 +194,6 @@ class DonchianAlgo_48hr(Strategy):
                 )
                 self.submit_order(sell_order)
                 return
-
-            if has_long_position:
-                if current_price <= self.long_stop_loss_price:
-                    self.sell_all()
-                    return
-            elif has_short_position:
-                if current_price >= self.short_stop_loss_price:
-                    self.sell_all()
-                    return
 
 
 api_key = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
