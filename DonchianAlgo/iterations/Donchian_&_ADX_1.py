@@ -112,17 +112,33 @@ class DonchianAlgo_48hr(Strategy):
         self.highest_price = channel_list[2]
 
     def on_trading_iteration(self):
+        # Check if ADX_df is empty or invalid
+        if self.ADX_df is None or self.ADX_df.empty:
+            print("ADX DataFrame is empty. Skipping iteration.")
+            return
+
+        # Check if ADX column has enough data
+        if 'ADX' not in self.ADX_df.columns or self.ADX_df['ADX'].isna().all():
+            print("ADX data is missing or NaN. Skipping iteration.")
+            return
+
+        # Safely access the latest ADX value
+        try:
+            latest_adx = self.ADX_df['ADX'].iloc[-1]
+        except IndexError:
+            print("Not enough ADX data to calculate. Skipping iteration.")
+            return
+
         current_price = self.get_last_price(self.symbol)
+        if current_price is None or pd.isna(current_price):
+            print(f"Error getting last price for {self.symbol}: price is NaN. Skipping iteration.")
+            return
+
         position = self.get_position(self.symbol)
         has_long_position = position is not None and position.quantity > 0
         has_short_position = position is not None and position.quantity < 0
 
-        latest_adx = self.ADX_df['ADX'].iloc[-1]
-
         if latest_adx > 25:
-                
-        
-            
             if current_price > self.highest_price and not has_long_position:
                 if has_short_position:
                     self.sell_all()
@@ -156,17 +172,15 @@ class DonchianAlgo_48hr(Strategy):
                 )
                 self.submit_order(sell_order)
                 return
-            
-            if(has_long_position):
-                if(current_price <= self.long_stop_loss_price):
+
+            if has_long_position:
+                if current_price <= self.long_stop_loss_price:
                     self.sell_all()
                     return
-            elif(has_short_position):
-                if(current_price >= self.short_stop_loss_price):
+            elif has_short_position:
+                if current_price >= self.short_stop_loss_price:
                     self.sell_all()
                     return
-
-
 
 
 api_key = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
