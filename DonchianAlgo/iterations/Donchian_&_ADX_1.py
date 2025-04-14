@@ -18,7 +18,7 @@ import pandas as pd
 from polygon import RESTClient
 import requests
 
-start_date = datetime(2016,5,5)
+start_date = datetime(2020,5,5)
 end_date = datetime(2024,1,1) 
 
 symbol = "SPY"
@@ -94,7 +94,7 @@ class DonchianAlgo_48hr(Strategy):
         last_price = self.get_last_price(self.symbol)
         marginbp = cash * 1.2
         if last_price is None or last_price == 0:
-            print("No Stock Data")
+            #print("No Stock Data")
             return 0
 
         quantity = round(marginbp * .98 / last_price,0)
@@ -125,12 +125,12 @@ class DonchianAlgo_48hr(Strategy):
         try:
             latest_adx = self.ADX_df['ADX'].iloc[-1]
         except IndexError:
-            print("Not enough ADX data to calculate. Skipping iteration.")
+            #print("Not enough ADX data to calculate. Skipping iteration.")
             return
 
         current_price = self.get_last_price(self.symbol)
         if current_price is None or pd.isna(current_price):
-            print(f"Error getting last price for {self.symbol}: price is NaN. Skipping iteration.")
+            #print(f"Error getting last price for {self.symbol}: price is NaN. Skipping iteration.")
             return
 
         position = self.get_position(self.symbol)
@@ -139,23 +139,23 @@ class DonchianAlgo_48hr(Strategy):
 
         # Rolling stop-loss logic for long positions
         if has_long_position:
-            if self.highest_price is None or current_price > self.highest_price:
+            if self.highest_price is None or current_price >= self.highest_price:
                 self.highest_price = current_price
                 self.long_stop_loss_price = self.highest_price * 0.96  # Adjust stop-loss to 4% below the highest price
 
-            if current_price <= self.long_stop_loss_price:
-                print(f"Long position stop-loss triggered at {current_price}. Selling all.")
+            if current_price < self.long_stop_loss_price:
+                #print(f"Long position stop-loss triggered at {current_price}. Selling all.")
                 self.sell_all()
                 return
 
         # Rolling stop-loss logic for short positions
         elif has_short_position:
-            if self.lowest_price is None or current_price < self.lowest_price:
+            if self.lowest_price is None or current_price <= self.lowest_price:
                 self.lowest_price = current_price
                 self.short_stop_loss_price = self.lowest_price * 1.03  # Adjust stop-loss to 3% above the lowest price
 
-            if current_price >= self.short_stop_loss_price:
-                print(f"Short position stop-loss triggered at {current_price}. Selling all.")
+            if current_price > self.short_stop_loss_price:
+                #print(f"Short position stop-loss triggered at {current_price}. Selling all.")
                 self.sell_all()
                 return
 
