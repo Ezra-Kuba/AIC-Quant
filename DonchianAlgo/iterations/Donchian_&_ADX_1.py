@@ -21,7 +21,7 @@ import requests
 start_date = datetime(2020,5,5)
 end_date = datetime(2024,1,1) 
 
-symbol = "SPY"
+symbol = "IAU"
 BASE_URL = 'https://paper-api.alpaca.markets/v2'
 
 API_KEY = 'PKHU42ZDVTSNKQY264DS'
@@ -82,11 +82,13 @@ class DonchianAlgo_48hr(Strategy):
         # Return the calculated values
         return [min_price, mid_price, max_price]
 
-    def initialize(self, symbol="SPY"):
+    def initialize(self, symbol="IAU"):
         self.symbol = symbol
         self.sleeptime = "1H"
         self.last_trade = None
         self.highest_price = None
+        self.long_stop_loss_price = 0.0
+        self.short_stop_loss_price = 0.0
         self.lowest_price = None
     
     def position_sizing(self): 
@@ -102,7 +104,7 @@ class DonchianAlgo_48hr(Strategy):
 
     def before_market_opens(self):
     # Call CalcDonchChannels method using self.
-        prices = self.get_historical_prices(asset="SPY", length=36, timestep="60 minute")
+        prices = self.get_historical_prices(asset="IAU", length=36, timestep="60 minute")
         df = prices.df
         self.ADX_df = self.calculate_adx(df)
         channel_list = self.CalcDonchChannels(df)
@@ -125,17 +127,29 @@ class DonchianAlgo_48hr(Strategy):
         try:
             latest_adx = self.ADX_df['ADX'].iloc[-1]
         except IndexError:
-            #print("Not enough ADX data to calculate. Skipping iteration.")
             return
 
         current_price = self.get_last_price(self.symbol)
         if current_price is None or pd.isna(current_price):
-            #print(f"Error getting last price for {self.symbol}: price is NaN. Skipping iteration.")
             return
 
         position = self.get_position(self.symbol)
         has_long_position = position is not None and position.quantity > 0
         has_short_position = position is not None and position.quantity < 0
+
+        # If not in a position, invest in SPY
+        if not has_long_position and not has_short_position:
+            order_quantity = self.position_sizing()
+            if order_quantity > 0:
+                # print(f"\nBuying {order_quantity} shares of SPY.")
+                buy_order = self.create_order(
+                    "SPY",
+                    order_quantity,
+                    'buy',
+                    type='market'
+                )
+                self.submit_order(buy_order)
+            return
 
         # Rolling stop-loss logic for long positions
         if has_long_position:
@@ -144,7 +158,6 @@ class DonchianAlgo_48hr(Strategy):
                 self.long_stop_loss_price = self.highest_price * 0.96  # Adjust stop-loss to 4% below the highest price
 
             if current_price < self.long_stop_loss_price:
-                #print(f"Long position stop-loss triggered at {current_price}. Selling all.")
                 self.sell_all()
                 return
 
@@ -155,7 +168,6 @@ class DonchianAlgo_48hr(Strategy):
                 self.short_stop_loss_price = self.lowest_price * 1.03  # Adjust stop-loss to 3% above the lowest price
 
             if current_price > self.short_stop_loss_price:
-                #print(f"Short position stop-loss triggered at {current_price}. Selling all.")
                 self.sell_all()
                 return
 
