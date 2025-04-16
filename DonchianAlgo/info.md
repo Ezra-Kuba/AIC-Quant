@@ -12,6 +12,7 @@ The Donchian Channel is a simple technical indicator. It creates two bands:
 - **Lower Band**: lowest low over a lookback period  
 
 If the stock trades outside these bands, it signals a possible trend.
+But this is clearly not enough on its own.
 
 ### ADX (Average Directional Index)
 
@@ -32,7 +33,7 @@ The ADX measures the **strength** of a trend (not the direction). It uses recent
   - ADX > 25  
 
 - **Otherwise**:  
-  Stay out of the market and invest in the **S&P 500**, to match baseline performance.
+  Stay out of the market and invest in the **S&P 500**, to match our baseline's performance.
 
 ---
 
