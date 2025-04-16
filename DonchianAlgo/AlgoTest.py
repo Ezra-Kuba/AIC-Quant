@@ -1,3 +1,6 @@
+#This is the simple original version of the algorithm
+#Feel free to analyze this before the up to date strategy
+
 
 #Set API Key, this is how lumibot needs it above all imports
 #Wasted 20 minutes figuring that out
