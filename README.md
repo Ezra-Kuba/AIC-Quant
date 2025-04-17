@@ -11,3 +11,5 @@ If you are new to trading completely, please read the provided pages in the driv
 list of what you should know before writing a line of code
 
 - What is a long? A short?
+- What is a future? A bond?
+- How many people beat the S&P 500 long term?
