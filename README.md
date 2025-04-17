@@ -12,4 +12,6 @@ list of what you should know before writing a line of code
 
 - What is a long? A short?
 - What is a future? A bond?
+- How does the team conduct trades and pull data?
+- What is a technical indicator?
 - How many people beat the S&P 500 long term?
