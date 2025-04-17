@@ -5,3 +5,9 @@
 This repository is meant to host many things, with a main focus on current iterations of strategies and data.
 The goal of this team is first and foremost to be challenged, and learn from challenges that come with developing trading strategies.
 Right now we have two strategies and are working on a Monte Carlo permutaitons generator, as well as a market levels bot
+
+## Getting started
+If you are new to trading completely, please read the provided pages in the drive. If you don't want to read, here's a quick
+list of what you should know before writing a line of code
+
+- What is a long? A short?
