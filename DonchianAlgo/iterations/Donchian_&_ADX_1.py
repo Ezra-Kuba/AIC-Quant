@@ -21,7 +21,7 @@ import requests
 start_date = datetime(2020,5,5)
 end_date = datetime(2024,1,1) 
 
-symbol = "IAU"
+symbol = "GLD"
 BASE_URL = 'https://paper-api.alpaca.markets/v2'
 
 API_KEY = 'PKHU42ZDVTSNKQY264DS'
@@ -82,7 +82,7 @@ class DonchianAlgo_48hr(Strategy):
         # Return the calculated values
         return [min_price, mid_price, max_price]
 
-    def initialize(self, symbol="IAU"):
+    def initialize(self, symbol="GLD"):
         self.symbol = symbol
         self.sleeptime = "1H"
         self.last_trade = None
@@ -90,6 +90,8 @@ class DonchianAlgo_48hr(Strategy):
         self.long_stop_loss_price = 0.0
         self.short_stop_loss_price = 0.0
         self.lowest_price = None
+        self.traded_this_iter = False
+        self.idle_in_market = False;
     
     def position_sizing(self): 
         cash = self.get_cash()
@@ -104,7 +106,7 @@ class DonchianAlgo_48hr(Strategy):
 
     def before_market_opens(self):
     # Call CalcDonchChannels method using self.
-        prices = self.get_historical_prices(asset="IAU", length=36, timestep="60 minute")
+        prices = self.get_historical_prices(asset="GLD", length=36, timestep="60 minute")
         df = prices.df
         self.ADX_df = self.calculate_adx(df)
         channel_list = self.CalcDonchChannels(df)
@@ -113,43 +115,21 @@ class DonchianAlgo_48hr(Strategy):
         self.highest_price = channel_list[2]
 
     def on_trading_iteration(self):
+        self.traded_this_iter = False
         # Check if ADX_df is empty or invalid
-        if self.ADX_df is None or self.ADX_df.empty:
-            print("ADX DataFrame is empty. Skipping iteration.")
-            return
-
-        # Check if ADX column has enough data
-        if 'ADX' not in self.ADX_df.columns or self.ADX_df['ADX'].isna().all():
-            print("ADX data is missing or NaN. Skipping iteration.")
-            return
+        
 
         # Safely access the latest ADX value
-        try:
-            latest_adx = self.ADX_df['ADX'].iloc[-1]
-        except IndexError:
-            return
+        # while(self.traded_this_iter == False):
+        latest_adx = self.ADX_df['ADX'].iloc[-1]
 
         current_price = self.get_last_price(self.symbol)
-        if current_price is None or pd.isna(current_price):
-            return
+        
 
         position = self.get_position(self.symbol)
         has_long_position = position is not None and position.quantity > 0
         has_short_position = position is not None and position.quantity < 0
 
-        # If not in a position, invest in SPY
-        if not has_long_position and not has_short_position:
-            order_quantity = self.position_sizing()
-            if order_quantity > 0:
-                # print(f"\nBuying {order_quantity} shares of SPY.")
-                buy_order = self.create_order(
-                    "SPY",
-                    order_quantity,
-                    'buy',
-                    type='market'
-                )
-                self.submit_order(buy_order)
-            return
 
         # Rolling stop-loss logic for long positions
         if has_long_position:
@@ -170,10 +150,14 @@ class DonchianAlgo_48hr(Strategy):
             if current_price > self.short_stop_loss_price:
                 self.sell_all()
                 return
-
+        
         # Entry logic based on ADX and price levels
         if latest_adx > 25:
-            if current_price > self.highest_price and not has_long_position:
+            if current_price > self.highest_price and (not has_long_position or self.idle_in_market):
+                if self.idle_in_market:
+                    self.idle_in_market = False
+                    self.sell_all()
+                    return
                 if has_short_position:
                     self.sell_all()
                     return
@@ -187,10 +171,16 @@ class DonchianAlgo_48hr(Strategy):
                     type='stop',
                     stop_price=self.long_stop_loss_price
                 )
-                self.submit_order(buy_order)
+                if(buy_order != None):
+                    self.submit_order(buy_order)
+                self.traded_this_iter = True;
                 return
 
-            elif current_price < self.lowest_price and not has_short_position:
+            elif current_price < self.lowest_price and (not has_short_position or self.idle_in_market):
+                if self.idle_in_market:
+                    self.idle_in_market = False;
+                    self.sell_all()
+                    return
                 if has_long_position:
                     self.sell_all()
                     return
@@ -204,15 +194,33 @@ class DonchianAlgo_48hr(Strategy):
                     type='stop',
                     stop_price=self.short_stop_loss_price
                 )
-                self.submit_order(sell_order)
+                if(sell_order != None):
+                    self.submit_order(sell_order)
+                self.traded_this_iter = True;
                 return
+        elif (not has_long_position) and (not has_short_position):
+            order_quantity = int(round(self.cash/self.get_last_price("SPY"),0))
+            if order_quantity > 0:
+                # print(f"\nBuying {order_quantity} shares of SH.")
+                buy_order = self.create_order(
+                    "SPY",
+                    order_quantity,
+                    'buy',
+                    type='market'
+                )
+                if(buy_order != None):
+                    self.submit_order(buy_order)
+                self.idle_in_market = True;
+                self.traded_this_iter = True;
+                return
+            return
 
 
-api_key = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
+Try_api_key = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
 DonchianAlgo_48hr.run_backtest(
     PolygonDataBacktesting,
     start_date,
     end_date,
     parameters={},
-    polygon_api_key= api_key
+    polygon_api_key= Try_api_key
 )
