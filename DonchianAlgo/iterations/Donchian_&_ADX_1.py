@@ -21,7 +21,7 @@ import requests
 start_date = datetime(2020,5,5)
 end_date = datetime(2024,1,1) 
 
-symbol = "GLD"
+symbol = "BAX"
 BASE_URL = 'https://paper-api.alpaca.markets/v2'
 
 API_KEY = 'PKHU42ZDVTSNKQY264DS'
@@ -82,7 +82,7 @@ class DonchianAlgo_48hr(Strategy):
         # Return the calculated values
         return [min_price, mid_price, max_price]
 
-    def initialize(self, symbol="GLD"):
+    def initialize(self, symbol="BAX"):
         self.symbol = symbol
         self.sleeptime = "1H"
         self.last_trade = None
@@ -94,6 +94,8 @@ class DonchianAlgo_48hr(Strategy):
         self.idle_in_market = False;
     
     def position_sizing(self): 
+        if(self.get_position(self.symbol) is not None):
+            return abs(self.get_position(self.symbol).quantity)
         cash = self.get_cash()
         last_price = self.get_last_price(self.symbol)
         marginbp = cash * 1.2
@@ -106,7 +108,7 @@ class DonchianAlgo_48hr(Strategy):
 
     def before_market_opens(self):
     # Call CalcDonchChannels method using self.
-        prices = self.get_historical_prices(asset="GLD", length=36, timestep="60 minute")
+        prices = self.get_historical_prices(asset="BAX", length=36, timestep="30 minute")
         df = prices.df
         self.ADX_df = self.calculate_adx(df)
         channel_list = self.CalcDonchChannels(df)
@@ -132,7 +134,7 @@ class DonchianAlgo_48hr(Strategy):
 
 
         # Rolling stop-loss logic for long positions
-        if has_long_position:
+        if has_long_position and self.idle_in_market == False:
             if self.highest_price is None or current_price >= self.highest_price:
                 self.highest_price = current_price
                 self.long_stop_loss_price = self.highest_price * 0.96  # Adjust stop-loss to 4% below the highest price
@@ -141,7 +143,7 @@ class DonchianAlgo_48hr(Strategy):
                 self.sell_all()
                 return
 
-        # Rolling stop-loss logic for short positions
+        #Rolling stop-loss logic for short positions
         elif has_short_position:
             if self.lowest_price is None or current_price <= self.lowest_price:
                 self.lowest_price = current_price
@@ -152,13 +154,13 @@ class DonchianAlgo_48hr(Strategy):
                 return
         
         # Entry logic based on ADX and price levels
-        if latest_adx > 25:
+        if latest_adx > 25 and latest_adx < 50 and self.traded_this_iter == False:
             if current_price > self.highest_price and (not has_long_position or self.idle_in_market):
                 if self.idle_in_market:
                     self.idle_in_market = False
                     self.sell_all()
                     return
-                if has_short_position:
+                elif has_short_position:
                     self.sell_all()
                     return
                 order_quantity = self.position_sizing()
@@ -173,7 +175,7 @@ class DonchianAlgo_48hr(Strategy):
                 )
                 if(buy_order != None):
                     self.submit_order(buy_order)
-                self.traded_this_iter = True;
+                    self.traded_this_iter = True;
                 return
 
             elif current_price < self.lowest_price and (not has_short_position or self.idle_in_market):
@@ -181,7 +183,7 @@ class DonchianAlgo_48hr(Strategy):
                     self.idle_in_market = False;
                     self.sell_all()
                     return
-                if has_long_position:
+                elif has_long_position:
                     self.sell_all()
                     return
                 order_quantity = self.position_sizing()
@@ -196,9 +198,13 @@ class DonchianAlgo_48hr(Strategy):
                 )
                 if(sell_order != None):
                     self.submit_order(sell_order)
-                self.traded_this_iter = True;
+                    self.traded_this_iter = True;
                 return
-        elif (not has_long_position) and (not has_short_position):
+        elif((has_long_position or has_short_position) and latest_adx > 50):
+            self.sell_all()
+            self.traded_this_iter = True
+            return
+        elif ((not has_long_position) and (not has_short_position) and (self.idle_in_market == False) and (self.traded_this_iter == False)):
             order_quantity = int(round(self.cash/self.get_last_price("SPY"),0))
             if order_quantity > 0:
                 # print(f"\nBuying {order_quantity} shares of SH.")
