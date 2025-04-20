@@ -1,0 +1,31 @@
+import numpy as np
+
+
+
+# These forms of convuluton all have different uses and the values can be tuned for different uses. For example if you wanted to detect sharp spikes you could use a kernel of [-1,5,-1] instead of [-1,2,-1] for 2nd derivitave
+
+# pretty much how this works is it is multiplying the kernel by the vals in the array and then outputing the resulting array
+# however numpy.convolve flips the kernels internally so [1,0,-1] is effectively [-1,0,1]
+# so if the kernel is [1,0,-1] it is multiplying n-1 * -1 + n * 0 + n+1 * 1
+
+end_prices = [34,21,32,45,23,32]
+
+# MOMENTUM CONVOLUTION
+# 1st derivitave, postive values if price increasing, negative if price dropping
+kernelM = [1,0,-1]
+momentum =  np.convolve(end_prices,kernelM, mode = 'valid') #only ouputs valid strings so output length = input length - kernel length + 1
+
+# 2nd derivitave, detects peaks
+kernelM2 = [-1,2,-1]
+momentum2 =  np.convolve(end_prices,kernelM2, mode = 'valid') #only ouputs valid strings so output length = input length - kernel length + 1
+
+
+# MOVING AVERAGE 
+n = 3 # however many values you want to average
+kernelA = [1/n] * n
+moving_average = np.convolve(end_prices,kernelA, mode = 'same') #ouput lenghth is the same as input
+
+
+# WEIGHTED SMOOTHING
+kernelW = [0.1, 0.2, 0.4, 0.2, 0.1]
+weighted_average =  np.convolve(end_prices,kernelW, mode = 'same') 
