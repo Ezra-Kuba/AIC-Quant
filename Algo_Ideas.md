@@ -1,2 +1,2 @@
-Search traffic analyzer for anomalies in specific sectors (apparrel retail?).
+Search traffic analyzer for anomalies in specific sectors (apparrel retail?) using PyTrends
 
