@@ -218,7 +218,7 @@ class DonchianAlgo_48hr(Strategy):
             return
 
 
-Try_api_key = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
+Try_api_key = os.getenv('POLYGON_API_KEY')
 DonchianAlgo_48hr.run_backtest(
     PolygonDataBacktesting,
     start_date,
