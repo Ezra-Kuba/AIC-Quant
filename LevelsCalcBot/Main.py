@@ -219,7 +219,7 @@ class LevelsTrader(Strategy):
 #this is our "main" call api kees and initialize backtest
 
 
-api_key = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
+api_key = os.getenv('POLYGON_API_KEY')
 LevelsTrader.run_backtest(
     PolygonDataBacktesting,
     start_date,

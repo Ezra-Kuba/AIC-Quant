@@ -130,7 +130,7 @@ class DonchianAlgo(Strategy):
         #     self.sell_all()  # Close short position
 
 
-api_key = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
+api_key = os.getenv('POLYGON_API_KEY')
 DonchianAlgo.run_backtest(
     PolygonDataBacktesting,
     start_date,
