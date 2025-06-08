@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import scipy
 import math
 import pandas_ta as ta
+import os
 from polygon import RESTClient
 
 
@@ -96,7 +97,8 @@ def get_nearest_levels(levels, price):
 start_date = datetime(2020,5,5)
 end_date = datetime(2021,1,1) 
 
-client = RESTClient("wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0")
+s = os.getenv('POLYGON_API_KEY')
+client = RESTClient(str(s))
 
 aggs = []
 for a in client.list_aggs(

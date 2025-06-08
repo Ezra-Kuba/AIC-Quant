@@ -2,11 +2,6 @@
 #Wasted 20 minutes figuring that out
 #THIS FIRST ALWAYS!
 import os
-os.environ["POLYGON_API_KEY"] = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
-
-
-
-
 from lumibot.strategies import Strategy
 from lumibot.traders import Trader
 from datetime import datetime
@@ -24,9 +19,10 @@ end_date = datetime(2024,1,1)
 symbol = "BAX"
 BASE_URL = 'https://paper-api.alpaca.markets/v2'
 
-API_KEY = 'PKHU42ZDVTSNKQY264DS'
-API_SECRET = 'a233CXw0ti4Pda7XaHXCqy6P8erGeCeRXzWkHbUj'
+os.environ["POLYGON_API_KEY"] = os.getenv('POLYGON_API_KEY')
 
+API_KEY = os.getenv('ALPACA_API_KEY')
+API_SECRET = os.getenv('ALPACA_API_SECRET')
 
 Alpaca_creds= {
     

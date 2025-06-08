@@ -6,7 +6,7 @@
 #Wasted 20 minutes figuring that out
 #THIS FIRST ALWAYS!
 import os
-os.environ["POLYGON_API_KEY"] = "wOPmrvJxYMnejK9h8bp82tgP5ZLxZxZ0"
+os.environ["POLYGON_API_KEY"] = os.getenv('POLYGON_API_KEY')
 
 
 
@@ -28,8 +28,8 @@ end_date = datetime(2024,1,1)
 symbol = "SPY"
 BASE_URL = 'https://paper-api.alpaca.markets/v2'
 
-API_KEY = 'PKHU42ZDVTSNKQY264DS'
-API_SECRET = 'a233CXw0ti4Pda7XaHXCqy6P8erGeCeRXzWkHbUj'
+API_KEY = os.getenv('ALPACA_API_KEY') 
+API_SECRET = os.getenv('ALPACA_API_SECRET')
 
 
 Alpaca_creds= {
