@@ -1,0 +1,18 @@
+The Search Trends Anomaly Detector algo (STAD) primarily finds meaningful spikes or trends in search
+traffic for a company that could be considered anomalous when compared to the actual stock price.
+
+This algo is mainly for finding information 'arbitrage' when a company seems to be getting more 
+attention (consumer-related) without a proper adjustment in stock price. This could be utilized by 
+predicting if companies detected have strong consumer trends that will outperform their 'priced-in' 
+growth and will be fully realized by their quarterly earnings report when the information about how well they did is released. 
+
+That said using this to trade earnings seems like the best use-case but be mindful about how some search traffic doesn't necessarily correlate to higher sales or other positive metrics. 
+
+The data pipeline is intended to collect and refine the necessary data for processing 
+    - The iShares-russel-3000-etf_fund.csv was mainly to get the names of the companies
+    - The search data is stored in trends_data.csv and is currently from past 3 months (im thinking of doing longer time for training but will update later)
+
+I want to make the algo use the search trends data in tandem with the closing price of a company's stock
+to assess the probability that there is an arbitrage opportunity. So far limiting the data 
+to consumer-discretionary stocks for now because of the consumer-oriented nature of their performance.
+Also its just using a SMA from the trends data to detect anomalies which leaves room for improvement (could use a ML model)
