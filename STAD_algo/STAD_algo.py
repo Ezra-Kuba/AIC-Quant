@@ -1,23 +1,23 @@
 import pandas as pd
 import numpy as np
 import os
+from datetime import datetime, timedelta
 
 def detect_anomalies(trends_df, window_size=7, spike_threshold_percent=50, ma_deviation_threshold=2):
     """
-    Detects search traffic anomalies (spikes or rapid increases).
+    Detects search traffic anomalies (spikes or rapid increases) ONLY if the value is >=80 in the last 2 weeks.
 
     Args:
         trends_df (pandas.DataFrame): DataFrame of Google Trends data.
         window_size (int): Window for moving average (e.g., 7 for weekly average).
         spike_threshold_percent (int): Percentage increase to consider a spike.
-        ma_deviation_threshold (int): How many standard deviations above the MA
-                                       to consider an anomaly.
+        ma_deviation_threshold (int): How many standard deviations above the MA to consider an anomaly.
 
     Returns:
-        dict: A dictionary where keys are company names and values are
-              detected anomaly details.
+        dict: A dictionary where keys are company names and values are detected anomaly details.
     """
     anomalies = {}
+    cutoff_date = datetime.now() - timedelta(days=14)
 
     for company in trends_df.columns:
         series = trends_df[company].dropna()
@@ -35,18 +35,29 @@ def detect_anomalies(trends_df, window_size=7, spike_threshold_percent=50, ma_de
         for i in range(window_size, len(series)):
             current_value = series.iloc[i]
             previous_value = series.iloc[i-1]
-            current_date = series.index[i].strftime('%Y-%m-%d')
+            current_date = series.index[i]
+            # Only consider anomalies in the last 2 weeks and value >= 80
+            if current_date < cutoff_date or current_value < 80:
+                continue
+
+            date_str = current_date.strftime('%Y-%m-%d')
 
             # Anomaly 1: Sudden Spike (large percentage increase)
             if not np.isnan(daily_change.iloc[i]) and daily_change.iloc[i] > spike_threshold_percent:
-                # Calculate change percent, avoiding division by zero
                 if previous_value == 0:
-                    change_percent = None
+                    window_vals = series.iloc[i-window_size:i]
+                    nonzero_window_vals = window_vals[window_vals != 0]
+                    if len(nonzero_window_vals) > 0:
+                        denom = nonzero_window_vals.mean()
+                    else:
+                        denom = 1
                 else:
-                    change_percent = ((current_value - previous_value) / previous_value) * 100
+                    denom = previous_value
+
+                change_percent = ((current_value - previous_value) / denom) * 100
 
                 anomalies.setdefault(company, []).append({
-                    'date': current_date,
+                    'date': date_str,
                     'type': 'Sudden Spike (Percent Change)',
                     'current_value': current_value,
                     'previous_value': previous_value,
@@ -55,10 +66,10 @@ def detect_anomalies(trends_df, window_size=7, spike_threshold_percent=50, ma_de
 
             # Anomaly 2: Rapidly Increasing (above moving average + std dev)
             if not np.isnan(moving_avg.iloc[i]) and not np.isnan(moving_std.iloc[i]):
-                if moving_std.iloc[i] > 0: # Avoid division by zero
+                if moving_std.iloc[i] > 0:
                     if (current_value - moving_avg.iloc[i]) / moving_std.iloc[i] > ma_deviation_threshold:
                         anomalies.setdefault(company, []).append({
-                            'date': current_date,
+                            'date': date_str,
                             'type': 'Rapidly Increasing (MA Deviation)',
                             'current_value': current_value,
                             'moving_average': moving_avg.iloc[i],
@@ -86,21 +97,31 @@ def load_trends_data(csv_path):
 trends_data = load_trends_data('STAD_algo/trends_data.csv')
 # Detect anomalies in the trends data
 anomalies = detect_anomalies(trends_data, window_size=7, spike_threshold_percent=50, ma_deviation_threshold=2)
-# Print detected anomalies
+# Print detected anomalies from the last 2 weeks only
+print("Anomaly Detection Results:")
+print("=====================================")
+print(f"Total anomalies Analyzed: {len(anomalies.keys())}")
 if anomalies:
+    cutoff_date = datetime.now() - timedelta(days=14)
     for company, alerts in anomalies.items():
-        print(f"Detected anomalies for {company}:")
-        for alert in alerts:
-            msg = f" - {alert['date']}: {alert['type']} (Current: {alert['current_value']}"
-            if 'previous_value' in alert:
-                msg += f", Previous: {alert['previous_value']}"
-            if 'change_percent' in alert:
-                msg += f", Change: {alert['change_percent']}"
-            if 'moving_average' in alert:
-                msg += f", MA: {alert['moving_average']:.2f}"
-            if 'deviation' in alert:
-                msg += f", Deviation: {alert['deviation']}"
-            msg += ")"
-            print(msg)
+        # Filter alerts for the last 2 weeks
+        recent_alerts = [
+            alert for alert in alerts
+            if datetime.strptime(alert['date'], "%Y-%m-%d") >= cutoff_date
+        ]
+        if recent_alerts:
+            print(f"Detected anomalies for {company}:")
+            for alert in recent_alerts:
+                msg = f" - {alert['date']}: {alert['type']} (Current: {alert['current_value']}"
+                if 'previous_value' in alert:
+                    msg += f", Previous: {alert['previous_value']}"
+                if 'change_percent' in alert:
+                    msg += f", Change: {alert['change_percent']}"
+                if 'moving_average' in alert:
+                    msg += f", MA: {alert['moving_average']:.2f}"
+                if 'deviation' in alert:
+                    msg += f", Deviation: {alert['deviation']}"
+                msg += ")"
+                print(msg)
 else:
     print("No anomalies detected in the trends data.")
